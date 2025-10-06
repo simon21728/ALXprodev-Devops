@@ -6,26 +6,23 @@
 OUTPUT_DIR="pokemon_data"
 mkdir -p "$OUTPUT_DIR"
 
-# List of Pokémon
-POKEMONS=("Bulbasaur" "Ivysaur" "Venusaur" "Charmander" "Charmeleon")
+# List of Pokémon in lowercase
+POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
 # Loop through each Pokémon
 for pokemon in "${POKEMONS[@]}"; do
-    # Convert name to lowercase for filename
-    name_lower=$(echo "$pokemon" | tr '[:upper:]' '[:lower:]')
-    
-    echo "Fetching data for $name_lower..."
+    echo "Fetching data for $pokemon..."
     
     # Fetch data from API
-    response=$(curl -s -w "%{http_code}" -o "$OUTPUT_DIR/$name_lower.json" "https://pokeapi.co/api/v2/pokemon/$name_lower")
+    response=$(curl -s -w "%{http_code}" -o "$OUTPUT_DIR/$pokemon.json" "https://pokeapi.co/api/v2/pokemon/$pokemon")
     http_code="${response: -3}"
     
     # Check if request was successful
     if [ "$http_code" -eq 200 ]; then
-        echo "Saved data to $OUTPUT_DIR/$name_lower.json ✅"
+        echo "Saved data to $OUTPUT_DIR/$pokemon.json "
     else
-        echo "Failed to fetch $name_lower. HTTP status: $http_code"
-        [ -f "$OUTPUT_DIR/$name_lower.json" ] && rm "$OUTPUT_DIR/$name_lower.json"
+        echo "Failed to fetch $pokemon. HTTP status: $http_code"
+        [ -f "$OUTPUT_DIR/$pokemon.json" ] && rm "$OUTPUT_DIR/$pokemon.json"
     fi
     
     # Delay to avoid rate-limiting
