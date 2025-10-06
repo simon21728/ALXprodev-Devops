@@ -1,6 +1,6 @@
 #!/bin/bash
 # batchProcessing-0x02
-# Script to fetch multiple Pokémon data and save to separate files
+# Script to fetch multiple Pokémon data with retry logic
 
 # Directory to store JSON files
 OUTPUT_DIR="pokemon_data"
@@ -9,22 +9,38 @@ mkdir -p "$OUTPUT_DIR"
 # List of Pokémon in lowercase
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
+# Maximum number of retries
+MAX_RETRIES=3
+
 # Loop through each Pokémon
 for pokemon in "${POKEMONS[@]}"; do
     echo "Fetching data for $pokemon..."
     
-    # Fetch data from API
-    response=$(curl -s -w "%{http_code}" -o "$OUTPUT_DIR/$pokemon.json" "https://pokeapi.co/api/v2/pokemon/$pokemon")
-    http_code="${response: -3}"
-    
-    # Check if request was successful
-    if [ "$http_code" -eq 200 ]; then
-        echo "Saved data to $OUTPUT_DIR/$pokemon.json "
-    else
-        echo "Failed to fetch $pokemon. HTTP status: $http_code"
+    attempt=1
+    success=0
+
+    while [ $attempt -le $MAX_RETRIES ]; do
+        # Fetch data from API
+        response=$(curl -s -w "%{http_code}" -o "$OUTPUT_DIR/$pokemon.json" "https://pokeapi.co/api/v2/pokemon/$pokemon")
+        http_code="${response: -3}"
+
+        if [ "$http_code" -eq 200 ]; then
+            echo "Saved data to $OUTPUT_DIR/$pokemon.json "
+            success=1
+            break
+        else
+            echo "Attempt $attempt failed for $pokemon (HTTP $http_code). Retrying..."
+            attempt=$((attempt + 1))
+            sleep 2  # Delay before retry
+        fi
+    done
+
+    if [ $success -eq 0 ]; then
+        echo "Failed to fetch $pokemon after $MAX_RETRIES attempts. Logging to errors.txt."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed to fetch $pokemon. HTTP status: $http_code" >> errors.txt
         [ -f "$OUTPUT_DIR/$pokemon.json" ] && rm "$OUTPUT_DIR/$pokemon.json"
     fi
-    
-    # Delay to avoid rate-limiting
+
+    # Small delay to avoid rate-limiting
     sleep 1
 done
