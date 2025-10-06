@@ -1,6 +1,6 @@
 #!/bin/bash
 # batchProcessing-0x04
-# Script to fetch multiple Pokémon data in parallel with explicit process management
+# Script to fetch multiple Pokémon data in parallel with proper process management
 
 OUTPUT_DIR="pokemon_data"
 mkdir -p "$OUTPUT_DIR"
@@ -31,12 +31,19 @@ for pokemon in "${POKEMONS[@]}"; do
     pids+=($!)
 done
 
-# Show background jobs
+# Show running background jobs
 jobs
 
-# Wait for all background processes to complete
+# Wait for all background processes
 for pid in "${pids[@]}"; do
-    wait "$pid"
+    if kill -0 "$pid" 2>/dev/null; then
+        wait "$pid"
+    fi
+done
+
+# Optional: Kill any stray background jobs
+for job in $(jobs -p); do
+    kill "$job" 2>/dev/null
 done
 
 echo "All Pokémon data fetches completed."
